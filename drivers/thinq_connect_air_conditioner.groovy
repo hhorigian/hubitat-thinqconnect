@@ -4,6 +4,9 @@
  *  Copyright 2025
  *
  *  Uses official LG ThinQ Connect API
+ *   27.12.2025 - hhorigian - Added wind functionality, added target temperature functionality
+ *   Need to use a Certificate Generation tool like: https://csrgenerator.com/ 
+ *
  */
 
 import groovy.transform.Field
@@ -70,19 +73,20 @@ metadata {
         // Commands
         command "start"
         command "stop"
-        // command "powerOff"
         command "getDeviceProfile"
+        command "setAirConJobMode", [[name:"Set AirConJobMode", type: "ENUM", description: "Select AirCon Job Mode", constraints: ["COOL", "ENERGY_SAVING", "AIR_DRY", "FAN"]]]
+        command "setTargetTemperature", ["number"]
+        command "setWindStrength", [[name:"Set Wind Strength", type: "ENUM", description: "Select Wind Strength", constraints: ["LOW", "MID", "HIGH"]]]
+        command "setLight", [[name:"Set Light on Unit", type: "ENUM", description: "Green Light on AC", constraints: ["ON", "OFF"]]]
+
+        // command "powerOff"
         // command "setAirConOperationMode", ["string"]
         // command "setAirCleanOperationMode", ["string"]
-        command "setAirConJobMode", [[name:"Set AirConJobMode", type: "ENUM", description: "Select AirCon Job Mode", constraints: ["COOL", "ENERGY_SAVING", "AIR_DRY", "FAN"]]]
-        // command "setTargetTemperature", ["number"]
         // command "setHeatTargetTemperature", ["number"]
         // command "setCoolTargetTemperature", ["number"]
-        command "setWindStrength", [[name:"Set Wind Strength", type: "ENUM", description: "Select Wind Strength", constraints: ["LOW", "MID", "HIGH"]]]
         // command "setWindStep", ["number"]
         // command "setRotateUpDown", ["string"]
         // command "setRotateLeftRight", ["string"]
-        // command "setLight", ["string"]
         // command "setPowerSave", ["string"]
         // command "setTwoSetEnabled", ["string"]
         command "setDelayStart", [[name:"Set Delay Start", type: "NUMBER", description: "Select Delay Start in minutes"]]
@@ -488,17 +492,19 @@ def setAirConJobMode(mode) {
 //     parent.sendDeviceCommand(deviceId, command)
 // }
 
-// def setTargetTemperature(temperature) {
-//     logger("debug", "setTargetTemperature(${temperature})")
-//     def deviceId = getDeviceId()
-//     def command = [
-//         temperatureInUnits: [
-//             coolTargetTemperature: temperature,
-//             unit: isFahrenheit ? "F" : "C"
-//         ]
-//     ]
-//     parent.sendDeviceCommand(deviceId, command)
-// }
+//TEST TARGET TEMP VH
+
+def setTargetTemperature(temperature) {
+    logger("debug", "setTargetTemperature(${temperature})")
+     def deviceId = getDeviceId()
+     def command = [
+         temperature: [
+             targetTemperature: temperature,
+             unit: isFahrenheit ? "F" : "C"
+         ]
+     ]
+     parent.sendDeviceCommand(deviceId, command)
+ }
 
 // def setHeatTargetTemperature(temperature) {
 //     logger("debug", "setHeatTargetTemperature(${temperature})")
@@ -515,7 +521,7 @@ def setCoolingSetpoint(temperature) {
     logger("debug", "setCoolingSetpoint(${temperature})")
     def deviceId = getDeviceId()
     def command = [
-        temperatureInUnits: [
+        temperature: [
             coolTargetTemperature: temperature,
             unit: isFahrenheit ? "F" : "C"
         ]
@@ -534,6 +540,19 @@ def setWindStrength(strength) {
     parent.sendDeviceCommand(deviceId, command)
 }
 
+
+def setLight(state) {
+     log.debug "setlightc= " + state
+     def deviceId = getDeviceId()
+     def command = [
+         display: [
+             light: state
+         ]
+     ]
+     parent.sendDeviceCommand(deviceId, command)
+ }
+
+
 // def setWindStep(step) {
 //     logger("debug", "setWindStep(${step})")
 //     def deviceId = getDeviceId()
@@ -544,6 +563,7 @@ def setWindStrength(strength) {
 //     ]
 //     parent.sendDeviceCommand(deviceId, command)
 // }
+
 
 // def setRotateUpDown(enabled) {
 //     logger("debug", "setRotateUpDown(${enabled})")
@@ -562,17 +582,6 @@ def setWindStrength(strength) {
 //     def command = [
 //         windDirection: [
 //             rotateLeftRight: enabled == "enabled" || enabled == true
-//         ]
-//     ]
-//     parent.sendDeviceCommand(deviceId, command)
-// }
-
-// def setLight(state) {
-//     logger("debug", "setLight(${state})")
-//     def deviceId = getDeviceId()
-//     def command = [
-//         display: [
-//             light: state == "on" || state == true
 //         ]
 //     ]
 //     parent.sendDeviceCommand(deviceId, command)
@@ -599,6 +608,7 @@ def setWindStrength(strength) {
 //     ]
 //     parent.sendDeviceCommand(deviceId, command)
 // }
+
 
 def setDelayStart(minutes) {
     logger("debug", "setDelayStart(${minutes})")
