@@ -25,10 +25,12 @@ This is a new Hubitat integration for LG ThinQ devices using the official LG Thi
 
 ### 2. Get Your PAT Token
 
-1. Visit the LG ThinQ Connect portal
-2. Create a new application or use an existing one
-3. Generate a Personal Access Token (PAT)
-4. Note your country/region
+1. Visit the LG ThinQ Connect portal.
+2. Note your country/region 
+3. Login using the same credentials as your LG ThinQ app.
+4. Create a new application or use an existing one
+5. Generate a Personal Access Token (PAT)
+   
 
 ### 3. Obtain MQTT Certificates
 
@@ -65,13 +67,15 @@ Currently supported device types:
 - Dishwashers (`DEVICE_DISH_WASHER`)
 - WashTower units (`DEVICE_WASHTOWER_WASHER`, `DEVICE_WASHTOWER_DRYER`)
 - Microwaves (`DEVICE_MICROWAVE_OVEN`)
+- Air Conditioners (`DEVICE_AIR_CONDITIONER`)
+
 
 ## Unsupported Devices
 
 Currently implemented but untestested:
 - Refrigerators (`DEVICE_REFRIGERATOR`)
 - Ovens (`DEVICE_OVEN`, `DEVICE_COOKTOP`)
-- Air Conditioners (`DEVICE_AIR_CONDITIONER`)
+
 
 ## Device Capabilities
 
@@ -83,6 +87,11 @@ Currently implemented but untestested:
 ### Dryer
 - **Attributes**: Current state, remaining time, dry level, temperature level, etc.
 - **Commands**: Toggle, Power Off, Set delay start
+- **Capabilities**: Switch, Sensor, Refresh
+
+### Air Conditioner
+- **Attributes**: Current state, sensor temperature, etc.
+- **Commands**: Power Off, Power On, Set Target Temperature
 - **Capabilities**: Switch, Sensor, Refresh
 
 ## API Endpoints
