@@ -6,6 +6,11 @@
  *
  *  Uses the official LG ThinQ Connect API with PAT token authentication
  *  Based on the pythinqconnect SDK and Home Assistant integration
+ *  
+ *  
+ *  
+ *   27.12.2025 - hhorigian - Added Brazil as a country for countries with PAT Token, added wind functionality, added target temperature functionality
+ *   Need to use a Certificate Generation tool like: https://csrgenerator.com/ 
  *
  */
 
@@ -65,6 +70,7 @@ preferences {
     "SE": "Sweden",
     "NO": "Norway",
     "DK": "Denmark",
+    "BR": "Brazil",    
     "FI": "Finland"
 ]
 
@@ -73,7 +79,7 @@ preferences {
     "KR": "kic", "JP": "kic", "AU": "kic",
     "GB": "eic", "DE": "eic", "FR": "eic", "IT": "eic", 
     "ES": "eic", "NL": "eic", "SE": "eic", "NO": "eic", 
-    "DK": "eic", "FI": "eic"
+    "DK": "eic", "FI": "eic", "BR": "aic"
 ]
 
 @Field static def caCertUrl = "https://www.amazontrust.com/repository/AmazonRootCA1.pem"
@@ -99,7 +105,7 @@ def prefMain() {
             paragraph "This integration uses the official LG ThinQ Connect API with PAT (Personal Access Token) authentication."
             paragraph "You will need:"
             paragraph "1. A PAT token from LG ThinQ Connect portal"
-            paragraph "2. MQTT certificates (can be hardcoded or generated once)"
+            paragraph "2. MQTT certificates (can be hardcoded or generated once) (https://csrgenerator.com/) "
             paragraph "3. Your country/region selection"
         }
     }
