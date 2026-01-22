@@ -6,6 +6,7 @@
  *  Uses official LG ThinQ Connect API
  *   27.12.2025 - hhorigian - Added wind functionality, added target temperature functionality
  *   Need to use a Certificate Generation tool like: https://csrgenerator.com/ 
+ *   21.1.2025 - hhorigian - Added Thermostat Capability. Added commands for HomeKit compatibility Thermostat. 
  *
  */
 
@@ -24,7 +25,9 @@ metadata {
         capability "TemperatureMeasurement"
         // capability "ThermostatHeatingSetpoint"
         capability "ThermostatCoolingSetpoint"
+        capability "Thermostat"
 
+        
         attribute "currentState", "string"
         attribute "currentJobMode", "string"
         attribute "airConOperationMode", "string"
@@ -716,4 +719,121 @@ private logger(level, msg) {
             log."${level}" "${device.displayName} ${msg}"
         }
     }
+}
+
+
+/*
+ * HomeKit Bridge / Thermostat compatibility wrappers
+ * (Adds missing Thermostat methods without changing existing behavior)
+ */
+
+// HomeKit commonly calls this
+def setThermostatMode(String mode) {
+    logger("debug", "setThermostatMode(${mode})")
+
+    if (!mode) return
+    def m = mode.toLowerCase()
+
+    switch (m) {
+        case "off":
+            stop()
+            break
+
+        case "cool":
+            start()
+            // Use existing job modes already supported by driver UI
+            setAirConJobMode("COOL")
+            break
+
+        case "heat":
+            // If your LG model supports HEAT via API, you can enable it here.
+            // For now, map to COOL to avoid breaking anything (or just start()).
+            start()
+            // setAirConJobMode("HEAT")  // only if your profile supports it
+            break
+
+        case "auto":
+            start()
+            // If your profile supports AUTO, use it. Otherwise keep device on.
+            // setAirConJobMode("AUTO")
+            break
+
+        case "dry":
+        case "dehumidify":
+            start()
+            setAirConJobMode("AIR_DRY")
+            break
+
+        case "fan":
+        case "fanonly":
+        case "fan only":
+            start()
+            setAirConJobMode("FAN")
+            break
+
+        default:
+            // Fallback: at least power on
+            start()
+            break
+    }
+
+    // Optional: emit thermostatMode so HomeKit UI stays in sync
+    // (doesn't change device behavior, only state reporting)
+    try {
+        sendEvent(name: "thermostatMode", value: m)
+    } catch (ignored) {}
+}
+
+// Some integrations call these legacy fan helpers
+def fanOn() {
+    logger("debug", "fanOn()")
+    setThermostatFanMode("on")
+}
+
+def fanAuto() {
+    logger("debug", "fanAuto()")
+    setThermostatFanMode("auto")
+}
+
+// HomeKit may call this too
+def setThermostatFanMode(String fanMode) {
+    logger("debug", "setThermostatFanMode(${fanMode})")
+
+    if (!fanMode) return
+    def f = fanMode.toLowerCase()
+
+    // Minimal mapping that won't disrupt current driver logic:
+    // - "on" => ensure unit on + FAN job mode
+    // - "auto" => keep unit on, but don't force FAN mode (leave current job)
+    switch (f) {
+        case "on":
+            start()
+            setAirConJobMode("FAN")
+            break
+        case "auto":
+            // Do not change job mode; just ensure it is on if needed
+            start()
+            break
+        case "circulate":
+            start()
+            // You could decide to map circulate to FAN as well:
+            // setAirConJobMode("FAN")
+            break
+        default:
+            break
+    }
+
+    // Optional: emit thermostatFanMode
+    try {
+        sendEvent(name: "thermostatFanMode", value: f)
+    } catch (ignored) {}
+}
+
+// Optional helper: some bridges call setThermostatOperatingState directly (rare)
+def setThermostatOperatingState(String state) {
+    logger("debug", "setThermostatOperatingState(${state})")
+    // Not used to control the device; only to satisfy callers if they attempt it.
+    try {
+        sendEvent(name: "thermostatOperatingState", value: state)
+    } catch (ignored) {}
 }
