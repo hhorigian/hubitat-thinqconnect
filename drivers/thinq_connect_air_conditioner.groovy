@@ -7,8 +7,11 @@
  *   27.12.2025 - hhorigian - Added wind functionality, added target temperature functionality
  *   Need to use a Certificate Generation tool like: https://csrgenerator.com/ 
  *   21.1.2025 - hhorigian - Added Thermostat Capability. Added commands for HomeKit compatibility Thermostat. 
+ *   28.1.2025 - hhorigian - Added Set Defaults, to initialize heatingsetpoint and enable EZ Dashboards tile 
+ 
  *
  */
+
 
 import groovy.transform.Field
 import groovy.json.JsonSlurper
@@ -27,7 +30,8 @@ metadata {
         capability "ThermostatCoolingSetpoint"
         capability "Thermostat"
 
-        
+
+		attribute "heatingSetpoint", "string" 
         attribute "currentState", "string"
         attribute "currentJobMode", "string"
         attribute "airConOperationMode", "string"
@@ -133,6 +137,7 @@ def initialize() {
     }
     
     refresh()
+    setdefaults()
 }
 
 def refresh() {
@@ -168,6 +173,41 @@ def mqttConnectUntilSuccessful() {
         runIn(15, "mqttConnectUntilSuccessful")
         return false
     }
+}
+
+
+def setdefaults() {
+
+    //sendEvent(name: "temperature", value: convertTemperatureIfNeeded(68.0,"F",1))
+    ///sendEvent(name: "thermostatSetpoint", value: "20", descriptionText: "Thermostat thermostatSetpoint set to 20")
+    sendEvent(name: "heatingSetpoint", value: "25", descriptionText: "Thermostat heatingSetpoint set to 20")     
+    //sendEvent(name: "coolingSetpoint", value: "19", descriptionText: "Thermostat coolingSetpoint set to 20") 
+	//sendEvent(name: "hysteresis", value: (hysteresis ?: 0.5).toBigDecimal())
+    //sendEvent(name: "thermostatOperatingState", value: "idle", descriptionText: "Set thermostatOperatingState to Idle")     
+    //sendEvent(name: "thermostatFanMode", value: "auto", descriptionText: "Set thermostatFanMode auto")     
+	//sendEvent(name: "speed", value: "auto", descriptionText: "speed set ")
+    //sendEvent(name: "setHeatingSetpoint", value: "25", descriptionText: "Set setHeatingSetpoint to 25")     
+
+    
+    //Thermostat Modes Enabled 
+	//setSupportedThermostatModes(JsonOutput.toJson(["auto", "cool", "heat", "off"]))
+    //setSupportedThermostatModes(JsonOutput.toJson(["auto","cool","heat","off"]))
+    //setSupportedThermostatModes(JsonOutput.toJson(["cool","heat","off"]))
+
+    //FAN MODES enabled
+    //setSupportedThermostatFanModes(JsonOutput.toJson(["auto"]))
+    //sendEvent(name: "thermostatFanMode", value: "auto", descriptionText: "Fan mode pinned to auto")
+    //setSupportedThermostatFanModes(JsonOutput.toJson(["auto","high","mid","low"]))
+    
+    
+    //def fanModes = ["auto", "cool", "emergency heat", "heat", "off"]
+    //def modes = ["auto","circulate","on"]
+    //def fanspeeds = ["low","medium-low","medium","medium-high","high","on","off","auto"]
+    //sendEvent(name: "supportedThermostatFanModes", value: fanModes, descriptionText: "supportedThermostatFanModes set")    
+	//sendEvent(name: "supportedThermostatModes", value: modes, descriptionText: "supportedThermostatModes set ")
+	//sendEvent(name: "supportedFanSpeeds", value: fanspeeds , descriptionText: "supportedThermostatModes set ")
+
+    
 }
 
 def parse(message) {
