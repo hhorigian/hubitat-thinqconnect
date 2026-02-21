@@ -257,8 +257,15 @@ def processStateData(data) {
     if (data.airConJobMode?.currentJobMode) {
         def jobMode = cleanEnumValue(data.airConJobMode.currentJobMode)
         sendEvent(name: "currentJobMode", value: jobMode)
+        sendEvent(name: "thermostatMode", value: jobMode)
+    
+     log.info "job mode = " + jobMode
+    
     }
 
+
+    
+    
     // Process operation modes
     if (data.operation?.airConOperationMode) {
         def opMode = cleanEnumValue(data.operation.airConOperationMode)
@@ -465,12 +472,16 @@ def heat() {
     log.debug "Thermostat heat() called"
     setAirConJobMode("HEAT")
     sendEvent(name: "thermostatMode", value: "heat")
+    sendEvent(name: "currentJobMode", value: "HEAT")   // <- ADD
+    
 }
 
 def cool() {
     log.debug "Thermostat cool() called"
     setAirConJobMode("COOL")
     sendEvent(name: "thermostatMode", value: "cool")
+    sendEvent(name: "currentJobMode", value: "COOL")   // <- ADD
+    
 }
 
 def getDeviceProfile() {
@@ -807,6 +818,7 @@ def setThermostatMode(String mode) {
             // For now, map to COOL to avoid breaking anything (or just start()).
             start()
             // setAirConJobMode("HEAT")  // only if your profile supports it
+            setAirConJobMode("HEAT")        
             break
 
         case "auto":
@@ -865,7 +877,6 @@ def setThermostatFanMode(String fanMode) {
     switch (f) {
         case "on":
             start()
-            setAirConJobMode("FAN")
             break
         case "auto":
             // Do not change job mode; just ensure it is on if needed
