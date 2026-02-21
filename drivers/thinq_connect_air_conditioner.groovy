@@ -270,9 +270,13 @@ def processStateData(data) {
     if (data.operation?.airConOperationMode) {
         def opMode = cleanEnumValue(data.operation.airConOperationMode)
         sendEvent(name: "airConOperationMode", value: opMode)
-        
+       
         def switchState = (currentState =~ /(?i)power_off/ ? 'off' : 'on')
         sendEvent(name: "switch", value: switchState)
+        log.info "switchState = " + switchState
+        //sendEvent(name: "switch", value: opMode)
+        
+        
     }
 
     // if (data.operation?.airCleanOperationMode) {
