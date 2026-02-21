@@ -8,7 +8,7 @@
  *   Need to use a Certificate Generation tool like: https://csrgenerator.com/ 
  *   21.1.2025 - hhorigian - Added Thermostat Capability. Added commands for HomeKit compatibility Thermostat. 
  *   28.1.2025 - hhorigian - Added Set Defaults, to initialize heatingsetpoint and enable EZ Dashboards tile 
- 
+ *   21.2.2026 - hhorigian - Added Heating Mode, Cool Mode, and setpoint for heating 
  *
  */
 
@@ -26,7 +26,7 @@ metadata {
         capability "Initialize"
         capability "Refresh"
         capability "TemperatureMeasurement"
-        // capability "ThermostatHeatingSetpoint"
+        capability "ThermostatHeatingSetpoint"
         capability "ThermostatCoolingSetpoint"
         capability "Thermostat"
 
@@ -78,14 +78,18 @@ metadata {
         // attribute "sleepRelativeMinuteToStop", "number"
         
         // Commands
+        command "on"
+        command "off"
         command "start"
         command "stop"
         command "getDeviceProfile"
-        command "setAirConJobMode", [[name:"Set AirConJobMode", type: "ENUM", description: "Select AirCon Job Mode", constraints: ["COOL", "ENERGY_SAVING", "AIR_DRY", "FAN"]]]
+        // ANTIGO command "setAirConJobMode", [[name:"Set AirConJobMode", type: "ENUM", description: "Select AirCon Job Mode", constraints: ["COOL", "ENERGY_SAVING", "AIR_DRY", "FAN"]]]
+		command "setAirConJobMode", [[name:"Set AirConJobMode", type: "ENUM", description: "Select AirCon Job Mode", constraints: ["COOL", "HEAT", "ENERGY_SAVING", "AIR_DRY", "FAN"]]]
         command "setTargetTemperature", ["number"]
         command "setWindStrength", [[name:"Set Wind Strength", type: "ENUM", description: "Select Wind Strength", constraints: ["LOW", "MID", "HIGH"]]]
         command "setLight", [[name:"Set Light on Unit", type: "ENUM", description: "Green Light on AC", constraints: ["ON", "OFF"]]]
 
+		command "setThermostatMode", [[name:"Mode*", type:"ENUM", constraints:["cool","heat"]]]        
         // command "powerOff"
         // command "setAirConOperationMode", ["string"]
         // command "setAirCleanOperationMode", ["string"]
@@ -209,6 +213,7 @@ def setdefaults() {
 
     
 }
+
 
 def parse(message) {
     def topic = interfaces.mqtt.parseMessage(message)
@@ -454,6 +459,18 @@ def processStateData(data) {
         def errorState = cleanEnumValue(data.error)
         sendEvent(name: "error", value: errorState)
     }
+}
+
+def heat() {
+    log.debug "Thermostat heat() called"
+    setAirConJobMode("HEAT")
+    sendEvent(name: "thermostatMode", value: "heat")
+}
+
+def cool() {
+    log.debug "Thermostat cool() called"
+    setAirConJobMode("COOL")
+    sendEvent(name: "thermostatMode", value: "cool")
 }
 
 def getDeviceProfile() {
