@@ -9,8 +9,8 @@
  *   21.1.2025 - hhorigian - Added Thermostat Capability. Added commands for HomeKit compatibility Thermostat. 
  *   28.1.2025 - hhorigian - Added Set Defaults, to initialize heatingsetpoint and enable EZ Dashboards tile 
  *   21.2.2026 - hhorigian - Added Heating Mode, Cool Mode, and setpoint for heating 
- *
- */
+ *   31.3.2026 - hhorigian - Fixed on/off switch null values returned. 
+  */
 
 
 import groovy.transform.Field
@@ -260,7 +260,7 @@ def processStateData(data) {
         sendEvent(name: "thermostatMode", value: jobMode)
     
      log.info "job mode = " + jobMode
-    
+     
     }
 
 
@@ -271,12 +271,12 @@ def processStateData(data) {
         def opMode = cleanEnumValue(data.operation.airConOperationMode)
         sendEvent(name: "airConOperationMode", value: opMode)
        
-        def switchState = (currentState =~ /(?i)power_off/ ? 'off' : 'on')
+        // Deriva switch do opMode que chegou (POWER_OFF → off, qualquer outro → on)
+        // Nao usa currentState pois pode ser null quando runState nao vem no mesmo payload
+        def rawOpMode = data.operation.airConOperationMode?.toString() ?: ""
+        def switchState = (rawOpMode ==~ /(?i).*power_off.*/) ? 'off' : 'on'
         sendEvent(name: "switch", value: switchState)
-        log.info "switchState = " + switchState
-        //sendEvent(name: "switch", value: opMode)
-        
-        
+        log.info "switchState = ${switchState} (opMode=${rawOpMode})"
     }
 
     // if (data.operation?.airCleanOperationMode) {
@@ -502,6 +502,8 @@ def start() {
         ]
     ]
     parent.sendDeviceCommand(deviceId, command)
+    sendEvent(name: "switch", value: "on")
+    sendEvent(name: "airConOperationMode", value: "On")
 }
 
 def stop() {
@@ -513,6 +515,8 @@ def stop() {
         ]
     ]
     parent.sendDeviceCommand(deviceId, command)
+    sendEvent(name: "switch", value: "off")
+    sendEvent(name: "airConOperationMode", value: "Off")
 }
 
 // def powerOff() {
