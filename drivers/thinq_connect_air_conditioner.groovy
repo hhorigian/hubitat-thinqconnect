@@ -10,6 +10,7 @@
  *   28.1.2025 - hhorigian - Added Set Defaults, to initialize heatingsetpoint and enable EZ Dashboards tile 
  *   21.2.2026 - hhorigian - Added Heating Mode, Cool Mode, and setpoint for heating 
  *   31.3.2026 - hhorigian - Fixed on/off switch null values returned. 
+ *.  21.5.2026 - hhorigian - Prevented unnecessary events being sent when values are unchanged, to reduce log noise and improve performance.
   */
 
 
@@ -298,8 +299,10 @@ def processStateData(data) {
     // } else 
     if (data.temperature?.currentTemperature != null) {
         def currentTemp = data.temperature.currentTemperature
-        sendEvent(name: "currentTemperature", value: currentTemp, unit: "F")
-        sendEvent(name: "temperature", value: currentTemp, unit: "F")
+        if (device.currentValue("currentTemperature")?.toString() != currentTemp?.toString()) {
+            sendEvent(name: "currentTemperature", value: currentTemp, unit: "F")
+            sendEvent(name: "temperature", value: currentTemp, unit: "F")
+        }
     }
 
     // if (data.temperature?.targetTemperatureC != null) {
