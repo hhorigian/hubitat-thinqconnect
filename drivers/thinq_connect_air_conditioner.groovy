@@ -11,6 +11,7 @@
  *   21.2.2026 - hhorigian - Added Heating Mode, Cool Mode, and setpoint for heating 
  *   31.3.2026 - hhorigian - Fixed on/off switch null values returned. 
  *.  21.5.2026 - hhorigian - Prevented unnecessary events being sent when values are unchanged, to reduce log noise and improve performance.
+ *   22.5.2026 - hhorigian - Suppress temperature/target events when switch is off, to avoid false-positive "on" in external apps (Vetra).
   */
 
 
@@ -299,7 +300,10 @@ def processStateData(data) {
     // } else 
     if (data.temperature?.currentTemperature != null) {
         def currentTemp = data.temperature.currentTemperature
-        if (device.currentValue("currentTemperature")?.toString() != currentTemp?.toString()) {
+        // Only emit temperature events when switch is on — avoids false-positive "active" state in external apps (Vetra)
+        // when the LG API pushes ambient-sensor readings for an off unit.
+        if (device.currentValue("switch") == "on" &&
+                device.currentValue("currentTemperature")?.toString() != currentTemp?.toString()) {
             sendEvent(name: "currentTemperature", value: currentTemp, unit: "F")
             sendEvent(name: "temperature", value: currentTemp, unit: "F")
         }
@@ -310,7 +314,7 @@ def processStateData(data) {
     //     sendEvent(name: "targetTemperature", value: targetTemp, unit: "C")
     //     sendEvent(name: "coolingSetpoint", value: targetTemp, unit: "C")
     // } else 
-    if (data.temperature?.targetTemperature != null) {
+    if (data.temperature?.targetTemperature != null && device.currentValue("switch") == "on") {
         def targetTemp = data.temperature.targetTemperature
         sendEvent(name: "targetTemperature", value: targetTemp, unit: "F")
         sendEvent(name: "coolingSetpoint", value: targetTemp, unit: "F")
