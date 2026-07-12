@@ -12,6 +12,7 @@
  *   31.3.2026 - hhorigian - Fixed on/off switch null values returned. 
  *.  21.5.2026 - hhorigian - Prevented unnecessary events being sent when values are unchanged, to reduce log noise and improve performance.
  *   22.5.2026 - hhorigian - Suppress temperature/target events when switch is off, to avoid false-positive "on" in external apps (Vetra).
+ *   12.7.2026 - hhorigian - Fixed heatingSetpoint: implemented setHeatingSetpoint() (was missing) and mirrored incoming targetTemperature into heatingSetpoint/coolingSetpoint based on currentJobMode, since LG uses a single setpoint field regardless of mode.
   */
 
 
@@ -317,7 +318,15 @@ def processStateData(data) {
     if (data.temperature?.targetTemperature != null && device.currentValue("switch") == "on") {
         def targetTemp = data.temperature.targetTemperature
         sendEvent(name: "targetTemperature", value: targetTemp, unit: "F")
-        sendEvent(name: "coolingSetpoint", value: targetTemp, unit: "F")
+
+        // LG expoe um unico setpoint (targetTemperature) independente do modo.
+        // Espelha no heatingSetpoint ou coolingSetpoint conforme o modo atual,
+        // para o thermostato do Hubitat nao ficar com valor desatualizado.
+        if (device.currentValue("currentJobMode") == "Heat") {
+            sendEvent(name: "heatingSetpoint", value: targetTemp, unit: "F")
+        } else {
+            sendEvent(name: "coolingSetpoint", value: targetTemp, unit: "F")
+        }
     }
 
     // if (data.temperature?.minTargetTemperatureC != null) {
@@ -603,16 +612,20 @@ def setTargetTemperature(temperature) {
 //     parent.sendDeviceCommand(deviceId, command)
 // }
 
+def setHeatingSetpoint(temperature) {
+    logger("debug", "setHeatingSetpoint(${temperature})")
+    // LG usa um unico campo targetTemperature independente do modo (Heat/Cool)
+    setTargetTemperature(temperature)
+    sendEvent(name: "heatingSetpoint", value: temperature)
+    sendEvent(name: "targetTemperature", value: temperature)
+}
+
 def setCoolingSetpoint(temperature) {
     logger("debug", "setCoolingSetpoint(${temperature})")
-    def deviceId = getDeviceId()
-    def command = [
-        temperature: [
-            coolTargetTemperature: temperature,
-            unit: isFahrenheit ? "F" : "C"
-        ]
-    ]
-    parent.sendDeviceCommand(deviceId, command)
+    // LG usa um unico campo targetTemperature independente do modo (Heat/Cool)
+    setTargetTemperature(temperature)
+    sendEvent(name: "coolingSetpoint", value: temperature)
+    sendEvent(name: "targetTemperature", value: temperature)
 }
 
 def setWindStrength(strength) {
