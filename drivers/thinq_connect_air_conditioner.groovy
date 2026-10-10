@@ -13,7 +13,8 @@
  *.  21.5.2026 - hhorigian - Prevented unnecessary events being sent when values are unchanged, to reduce log noise and improve performance.
  *   22.5.2026 - hhorigian - Suppress temperature/target events when switch is off, to avoid false-positive "on" in external apps (Vetra).
  *   12.7.2026 - hhorigian - Fixed heatingSetpoint: implemented setHeatingSetpoint() (was missing) and mirrored incoming targetTemperature into heatingSetpoint/coolingSetpoint based on currentJobMode, since LG uses a single setpoint field regardless of mode.
-  */
+ *   10.10.2026 - hhorigian - Fixed updating the Current Temperature value. Now every 10 minutes, only if Switch is on. 
+*/
 
 
 import groovy.transform.Field
@@ -142,7 +143,10 @@ def initialize() {
 
         mqttConnectUntilSuccessful()
     }
-    
+
+    unschedule("publishTemperature")          // só este, para não matar o retry do MQTT
+    runEvery10Minutes("publishTemperature")
+
     refresh()
     setdefaults()
 }
@@ -279,6 +283,7 @@ def processStateData(data) {
         def rawOpMode = data.operation.airConOperationMode?.toString() ?: ""
         def switchState = (rawOpMode ==~ /(?i).*power_off.*/) ? 'off' : 'on'
         sendEvent(name: "switch", value: switchState)
+		if (switchState == "on") runIn(3, "publishTemperature")    // <- novo        
         log.info "switchState = ${switchState} (opMode=${rawOpMode})"
     }
 
@@ -299,16 +304,19 @@ def processStateData(data) {
     //     sendEvent(name: "currentTemperature", value: currentTemp, unit: "C")
     //     sendEvent(name: "temperature", value: currentTemp, unit: "C")
     // } else 
-    if (data.temperature?.currentTemperature != null) {
-        def currentTemp = data.temperature.currentTemperature
-        // Only emit temperature events when switch is on — avoids false-positive "active" state in external apps (Vetra)
-        // when the LG API pushes ambient-sensor readings for an off unit.
-        if (device.currentValue("switch") == "on" &&
-                device.currentValue("currentTemperature")?.toString() != currentTemp?.toString()) {
-            sendEvent(name: "currentTemperature", value: currentTemp, unit: "F")
-            sendEvent(name: "temperature", value: currentTemp, unit: "F")
-        }
+
+if (data.temperature?.currentTemperature != null) {
+    def currentTemp = data.temperature.currentTemperature
+    state.lastTemp = currentTemp   // guarda sempre, mesmo com switch off
+
+    // Só emite se switch on e valor mudou (evita falso "on" no Vetra)
+    if (device.currentValue("switch") == "on" &&
+            device.currentValue("currentTemperature")?.toString() != currentTemp?.toString()) {
+        sendEvent(name: "currentTemperature", value: currentTemp, unit: "F")
+        sendEvent(name: "temperature", value: currentTemp, unit: "F")
     }
+}    
+    
 
     // if (data.temperature?.targetTemperatureC != null) {
     //     def targetTemp = data.temperature.targetTemperatureC
@@ -520,6 +528,7 @@ def start() {
     parent.sendDeviceCommand(deviceId, command)
     sendEvent(name: "switch", value: "on")
     sendEvent(name: "airConOperationMode", value: "On")
+    runIn(3, "publishTemperature")    // <- novo
 }
 
 def stop() {
@@ -932,4 +941,19 @@ def setThermostatOperatingState(String state) {
     try {
         sendEvent(name: "thermostatOperatingState", value: state)
     } catch (ignored) {}
+}
+
+
+def publishTemperature() {
+    if (device.currentValue("switch") != "on") {
+        logger("debug", "publishTemperature(): switch off, ignorado")
+        return
+    }
+
+    def temp = state.lastTemp ?: device.currentValue("currentTemperature")
+    if (temp == null) return
+
+    logger("debug", "publishTemperature(): ${temp}")
+    sendEvent(name: "currentTemperature", value: temp, unit: "F", isStateChange: true)
+    sendEvent(name: "temperature", value: temp, unit: "F", isStateChange: true)
 }
